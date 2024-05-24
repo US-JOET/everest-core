@@ -549,6 +549,41 @@ void OCPP201::ready() {
     this->charge_point->start(boot_reason);
 }
 
+void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::EnhancedChargingSchedule>& charging_schedules) {
+    const auto start_time = ocpp::DateTime();
+
+    // iterate over all schedules reported by libocpp to create ExternalLimits
+    // for each EVSE
+    for (auto const& [evse_id, schedule] : charging_schedules) {
+        types::energy::ExternalLimits limits;
+        std::vector<types::energy::ScheduleReqEntry> schedule_import;
+        for (const auto period : schedule.chargingSchedulePeriod) {
+            types::energy::ScheduleReqEntry schedule_req_entry;
+            types::energy::LimitsReq limits_req;
+            const auto timestamp = start_time.to_time_point() + std::chrono::seconds(period.startPeriod);
+            schedule_req_entry.timestamp = ocpp::DateTime(timestamp).to_rfc3339();
+            if (schedule.chargingRateUnit == ocpp::v201::ChargingRateUnitEnum::A) {
+                limits_req.ac_max_current_A = period.limit;
+                if (period.numberPhases.has_value()) {
+                    limits_req.ac_max_phase_count = period.numberPhases.value();
+                }
+                if (schedule.minChargingRate.has_value()) {
+                    limits_req.ac_min_current_A = schedule.minChargingRate.value();
+                }
+            } else {
+                limits_req.total_power_W = period.limit;
+            }
+            schedule_req_entry.limits_to_leaves = limits_req;
+            schedule_import.push_back(schedule_req_entry);
+        }
+        limits.schedule_import.emplace(schedule_import);
+
+        // FIXME: Support EVSE ID 0
+        EVLOG_debug << "OCPP sets the following external limits for EVSE " << evse_id << ": \n" << limits;
+        this->r_evse_manager.at(evse_id - 1)->call_set_external_limits(limits);
+    }
+}
+
 void OCPP201::process_session_event(const int32_t evse_id, const types::evse_manager::SessionEvent& session_event) {
     const auto connector_id = session_event.connector_id.value_or(1);
     switch (session_event.event) {

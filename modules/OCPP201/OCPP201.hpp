@@ -108,6 +108,9 @@ private:
     std::condition_variable evse_ready_cv;
     void init_evse_ready_map();
     bool all_evse_ready();
+
+    void set_external_limits(const std::map<int32_t, ocpp::v201::EnhancedChargingSchedule>& charging_schedules);
+
     std::map<int32_t, int32_t> get_connector_structure();
     void process_session_event(const int32_t evse_id, const types::evse_manager::SessionEvent& session_event);
     void process_tx_event_effect(const int32_t evse_id, const TxEventEffect tx_event_effect,
