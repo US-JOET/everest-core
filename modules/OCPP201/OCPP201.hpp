@@ -112,6 +112,7 @@ private:
     bool all_evse_ready();
 
     void set_external_limits(const std::map<int32_t, ocpp::v201::EnhancedChargingSchedule>& charging_schedules);
+    void publish_charging_schedules(const std::map<int32_t, ocpp::v201::EnhancedChargingSchedule>& charging_schedules);
 
     std::map<int32_t, int32_t> get_connector_structure();
     void process_session_event(const int32_t evse_id, const types::evse_manager::SessionEvent& session_event);

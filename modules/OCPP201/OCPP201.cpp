@@ -426,6 +426,7 @@ void OCPP201::ready() {
             this->config.PublishChargingScheduleDurationS
         );
         this->set_external_limits(charging_schedules);
+        this->publish_charging_schedules(charging_schedules);
     });
 
     callbacks.signal_set_charging_profiles_callback =
@@ -435,6 +436,7 @@ void OCPP201::ready() {
                 this->config.PublishChargingScheduleDurationS
             );
             this->set_external_limits(charging_schedules);
+            this->publish_charging_schedules(charging_schedules);
         };
 
     if (!this->r_data_transfer.empty()) {
@@ -599,6 +601,18 @@ void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::EnhancedCh
         EVLOG_debug << "OCPP sets the following external limits for EVSE " << evse_id << ": \n" << limits;
         this->r_evse_manager.at(evse_id - 1)->call_set_external_limits(limits);
     }
+}
+
+void OCPP201::publish_charging_schedules(
+        const std::map<int32_t, ocpp::v201::EnhancedChargingSchedule>& charging_schedules
+) {
+    types::ocpp::ChargingSchedules ocpp_schedules;
+    for (const auto& enhanced_schedule : charging_schedules) {
+        types::ocpp::ChargingSchedule ocpp_schedule = conversions::to_charging_schedule(enhanced_schedule.second);
+        ocpp_schedule.connector = enhanced_schedule.first;
+        ocpp_schedules.schedules.emplace_back(std::move(ocpp_schedule));
+    }
+    this->p_ocpp_generic->publish_charging_schedules(ocpp_schedules);
 }
 
 void OCPP201::process_session_event(const int32_t evse_id, const types::evse_manager::SessionEvent& session_event) {
