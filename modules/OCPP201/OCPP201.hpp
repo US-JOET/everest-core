@@ -30,7 +30,6 @@
 
 #include <ocpp/v201/charge_point.hpp>
 #include <transaction_handler.hpp>
-
 // ev@4bf81b14-a215-475c-a1d3-0a484ae48918:v1
 
 namespace module {
@@ -41,6 +40,7 @@ struct Conf {
     std::string DeviceModelDatabasePath;
     bool EnableExternalWebsocketControl;
     int MessageQueueResumeDelay;
+    int PublishChargingScheduleDurationS;
 };
 
 class OCPP201 : public Everest::ModuleBase {

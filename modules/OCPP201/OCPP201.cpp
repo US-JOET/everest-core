@@ -420,6 +420,17 @@ void OCPP201::ready() {
             this->p_ocpp_generic->publish_boot_notification_response(everest_boot_notification_response);
         };
 
+    // Smart Charging support
+
+    callbacks.signal_set_charging_profiles_callback =
+        [this]() {
+            EVLOG_info << "Received a new Charging Schedules from the CSMS or another actor.";
+            const auto charging_schedules = this->charge_point->get_all_enhanced_composite_charging_schedules(
+                this->config.PublishChargingScheduleDurationS
+            );
+            this->set_external_limits(charging_schedules);
+        };
+
     if (!this->r_data_transfer.empty()) {
         callbacks.data_transfer_callback = [this](const ocpp::v201::DataTransferRequest& request) {
             types::ocpp::DataTransferRequest data_transfer_request =
