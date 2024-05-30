@@ -28,6 +28,7 @@
 // insert your custom include headers here
 #include <tuple>
 
+#include <everest/timer.hpp>
 #include <ocpp/v201/charge_point.hpp>
 #include <transaction_handler.hpp>
 // ev@4bf81b14-a215-475c-a1d3-0a484ae48918:v1
@@ -84,6 +85,7 @@ public:
     // ev@1fce4c5e-0ab8-41bb-90f7-14277703d2ac:v1
     // insert your public definitions here
     std::unique_ptr<ocpp::v201::ChargePoint> charge_point;
+    std::unique_ptr<Everest::SteadyTimer> charging_schedules_timer;
     // ev@1fce4c5e-0ab8-41bb-90f7-14277703d2ac:v1
 
 protected:

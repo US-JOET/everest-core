@@ -421,6 +421,12 @@ void OCPP201::ready() {
         };
 
     // Smart Charging support
+    this->charging_schedules_timer = std::make_unique<Everest::SteadyTimer>([this]() {
+        const auto charging_schedules = this->charge_point->get_all_enhanced_composite_charging_schedules(
+            this->config.PublishChargingScheduleDurationS
+        );
+        this->set_external_limits(charging_schedules);
+    });
 
     callbacks.signal_set_charging_profiles_callback =
         [this]() {
