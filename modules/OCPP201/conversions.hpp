@@ -162,12 +162,12 @@ types::authorization::IdToken to_everest_id_token(const ocpp::v201::IdToken& id_
 types::authorization::CertificateStatus
 to_everest_certificate_status(const ocpp::v201::AuthorizeCertificateStatusEnum status);
 
-/// \brief Convert ocpp::v16::EnhancedChargingSchedulePeriod to types::ocpp::ChargingSchedulePeriod
+/// \brief Convert ocpp::v201::ChargingSchedulePeriod to types::ocpp::ChargingSchedulePeriod
 types::ocpp::ChargingSchedulePeriod
-to_charging_schedule_period(const ocpp::v201::EnhancedChargingSchedulePeriod& period);
+to_charging_schedule_period(const ocpp::v201::ChargingSchedulePeriod& period);
 
-/// \brief Convert ocpp::v16::EnhancedChargingSchedule to types::ocpp::ChargingSchedule
-types::ocpp::ChargingSchedule to_charging_schedule(const ocpp::v201::EnhancedChargingSchedule& schedule);
+/// \brief Convert ocpp::v201::CompositeSchedule to types::ocpp::ChargingSchedule
+types::ocpp::ChargingSchedule to_charging_schedule(const ocpp::v201::CompositeSchedule& schedule);
 
 /// \brief Converts a given ocpp::v201::TransactionEventRequest \p transaction_event to a
 /// types::ocpp::OcppTransactionEvent.

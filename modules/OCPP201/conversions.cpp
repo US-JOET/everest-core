@@ -1019,18 +1019,27 @@ to_everest_certificate_status(const ocpp::v201::AuthorizeCertificateStatusEnum s
     }
 }
 
+// TODO (drmrd):
 types::ocpp::ChargingSchedulePeriod
-to_charging_schedule_period(const ocpp::v201::EnhancedChargingSchedulePeriod& period) {
-    types::ocpp::ChargingSchedulePeriod csp = {
-        period.startPeriod,
-        period.limit,
-        period.stackLevel,
-        period.numberPhases,
-    };
+to_charging_schedule_period(const ocpp::v201::ChargingSchedulePeriod& period) {
+    types::ocpp::ChargingSchedulePeriod csp;
+    csp.start_period = period.startPeriod;
+    csp.limit = period.limit;
+
+    if (period.numberPhases.has_value()) {
+        csp.number_phases = period.numberPhases;
+    }
     return csp;
+
+    //  = {
+    //     period.startPeriod,
+    //     period.limit,
+    //     period.numberPhases,
+    // };
+    // return csp;
 }
 
-types::ocpp::ChargingSchedule to_charging_schedule(const ocpp::v201::EnhancedChargingSchedule& schedule) {
+types::ocpp::ChargingSchedule to_charging_schedule(const ocpp::v201::CompositeSchedule& schedule) {
     types::ocpp::ChargingSchedule csch = {
         0,
         ocpp::v201::conversions::charging_rate_unit_enum_to_string(schedule.chargingRateUnit),
@@ -1038,13 +1047,13 @@ types::ocpp::ChargingSchedule to_charging_schedule(const ocpp::v201::EnhancedCha
         std::nullopt,
         schedule.duration,
         std::nullopt,
-        schedule.minChargingRate};
+        std::nullopt};
     for (const auto& i : schedule.chargingSchedulePeriod) {
         csch.charging_schedule_period.emplace_back(to_charging_schedule_period(i));
     }
-    if (schedule.startSchedule.has_value()) {
-        csch.start_schedule = schedule.startSchedule.value().to_rfc3339();
-    }
+    // if (schedule.startSchedule.has_value()) {
+    //     csch.start_schedule = schedule.startSchedule.value().to_rfc3339();
+    // }
     return csch;
 }
 

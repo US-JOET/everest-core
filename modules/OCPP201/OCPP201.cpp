@@ -422,7 +422,7 @@ void OCPP201::ready() {
 
     // Smart Charging support
     this->charging_schedules_timer = std::make_unique<Everest::SteadyTimer>([this]() {
-        const auto charging_schedules = this->charge_point->get_all_enhanced_composite_charging_schedules(
+        const auto charging_schedules = this->charge_point->get_all_composite_charging_schedules(
             this->config.PublishChargingScheduleDurationS
         );
         this->set_external_limits(charging_schedules);
@@ -432,7 +432,7 @@ void OCPP201::ready() {
     callbacks.signal_set_charging_profiles_callback =
         [this]() {
             EVLOG_info << "Received a new Charging Schedules from the CSMS or another actor.";
-            const auto charging_schedules = this->charge_point->get_all_enhanced_composite_charging_schedules(
+            const auto charging_schedules = this->charge_point->get_all_composite_charging_schedules(
                 this->config.PublishChargingScheduleDurationS
             );
             this->set_external_limits(charging_schedules);
@@ -568,7 +568,7 @@ void OCPP201::ready() {
     this->charge_point->start(boot_reason);
 }
 
-void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::EnhancedChargingSchedule>& charging_schedules) {
+void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::CompositeSchedule>& charging_schedules) {
     const auto start_time = ocpp::DateTime();
 
     // iterate over all schedules reported by libocpp to create ExternalLimits
@@ -586,9 +586,6 @@ void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::EnhancedCh
                 if (period.numberPhases.has_value()) {
                     limits_req.ac_max_phase_count = period.numberPhases.value();
                 }
-                if (schedule.minChargingRate.has_value()) {
-                    limits_req.ac_min_current_A = schedule.minChargingRate.value();
-                }
             } else {
                 limits_req.total_power_W = period.limit;
             }
@@ -604,12 +601,12 @@ void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::EnhancedCh
 }
 
 void OCPP201::publish_charging_schedules(
-        const std::map<int32_t, ocpp::v201::EnhancedChargingSchedule>& charging_schedules
+        const std::map<int32_t, ocpp::v201::CompositeSchedule>& charging_schedules
 ) {
     types::ocpp::ChargingSchedules ocpp_schedules;
-    for (const auto& enhanced_schedule : charging_schedules) {
-        types::ocpp::ChargingSchedule ocpp_schedule = conversions::to_charging_schedule(enhanced_schedule.second);
-        ocpp_schedule.connector = enhanced_schedule.first;
+    for (const auto& schedule : charging_schedules) {
+        types::ocpp::ChargingSchedule ocpp_schedule = conversions::to_charging_schedule(schedule.second);
+        // ocpp_schedule.connector = schedule.first;
         ocpp_schedules.schedules.emplace_back(std::move(ocpp_schedule));
     }
     this->p_ocpp_generic->publish_charging_schedules(ocpp_schedules);
