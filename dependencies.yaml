@@ -55,7 +55,7 @@ libevse-security:
 
 # OCPP
 libocpp:
-  git: https://github.com/EVerest/libocpp.git
+  git: https://github.com/US-JOET/libocpp.git
   git_tag: charin-e2e-demo
   cmake_condition: "EVEREST_DEPENDENCY_ENABLED_LIBOCPP"
 # Josev
