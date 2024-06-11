@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Pionix GmbH and Contributors to EVerest
 #include "OCPP201.hpp"
-
 #include <fmt/core.h>
 #include <fstream>
+#include <ocpp/common/cistring.hpp>
 
 #include <websocketpp_utils/uri.hpp>
 
@@ -422,22 +422,24 @@ void OCPP201::ready() {
 
     // Smart Charging support
     this->charging_schedules_timer = std::make_unique<Everest::SteadyTimer>([this]() {
-        const auto charging_schedules = this->charge_point->get_all_composite_charging_schedules(
-            this->config.PublishChargingScheduleDurationS
-        );
+        const auto charging_schedules =
+            this->charge_point->get_all_composite_charging_schedules(this->config.PublishChargingScheduleDurationS);
         this->set_external_limits(charging_schedules);
         this->publish_charging_schedules(charging_schedules);
     });
 
-    callbacks.signal_set_charging_profiles_callback =
-        [this]() {
-            EVLOG_info << "Received a new Charging Schedules from the CSMS or another actor.";
-            const auto charging_schedules = this->charge_point->get_all_composite_charging_schedules(
-                this->config.PublishChargingScheduleDurationS
-            );
-            this->set_external_limits(charging_schedules);
-            this->publish_charging_schedules(charging_schedules);
-        };
+    callbacks.security_event_callback = [this](const ocpp::CiString<50>& event_type,
+                                               const std::optional<ocpp::CiString<255>>& tech_info) {
+        // Nothing to see here
+    };
+
+    callbacks.signal_set_charging_profiles_callback = [this]() {
+        EVLOG_info << "Received a new Charging Schedules from the CSMS or another actor.";
+        const auto charging_schedules =
+            this->charge_point->get_all_composite_charging_schedules(this->config.PublishChargingScheduleDurationS);
+        this->set_external_limits(charging_schedules);
+        this->publish_charging_schedules(charging_schedules);
+    };
 
     if (!this->r_data_transfer.empty()) {
         callbacks.data_transfer_callback = [this](const ocpp::v201::DataTransferRequest& request) {
@@ -600,9 +602,7 @@ void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::CompositeS
     }
 }
 
-void OCPP201::publish_charging_schedules(
-        const std::map<int32_t, ocpp::v201::CompositeSchedule>& charging_schedules
-) {
+void OCPP201::publish_charging_schedules(const std::map<int32_t, ocpp::v201::CompositeSchedule>& charging_schedules) {
     types::ocpp::ChargingSchedules ocpp_schedules;
     for (const auto& schedule : charging_schedules) {
         types::ocpp::ChargingSchedule ocpp_schedule = conversions::to_charging_schedule(schedule.second);
