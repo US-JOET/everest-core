@@ -28,30 +28,9 @@
 // insert your custom include headers here
 #include <tuple>
 
+#include <everest/timer.hpp>
 #include <ocpp/v201/charge_point.hpp>
-
-enum class TxStartPoint {
-    ParkingBayOccupancy,
-    EVConnected,
-    Authorized,
-    PowerPathClosed,
-    EnergyTransfer,
-    DataSigned
-};
-
-struct TransactionStart {
-    int32_t evse_id;
-    int32_t connector_id;
-    std::string session_id;
-    ocpp::DateTime timestamp;
-    ocpp::v201::TriggerReasonEnum trigger_reason;
-    ocpp::v201::MeterValue meter_start;
-    ocpp::v201::IdToken id_token;
-    std::optional<ocpp::v201::IdToken> group_id_token;
-    std::optional<int32_t> reservation_id;
-    std::optional<int32_t> remote_start_id;
-    ocpp::v201::ChargingStateEnum charging_state;
-};
+#include <transaction_handler.hpp>
 // ev@4bf81b14-a215-475c-a1d3-0a484ae48918:v1
 
 namespace module {
@@ -62,6 +41,7 @@ struct Conf {
     std::string DeviceModelDatabasePath;
     bool EnableExternalWebsocketControl;
     int MessageQueueResumeDelay;
+    int PublishChargingScheduleDurationS;
 };
 
 class OCPP201 : public Everest::ModuleBase {
@@ -105,6 +85,7 @@ public:
     // ev@1fce4c5e-0ab8-41bb-90f7-14277703d2ac:v1
     // insert your public definitions here
     std::unique_ptr<ocpp::v201::ChargePoint> charge_point;
+    std::unique_ptr<Everest::SteadyTimer> charging_schedules_timer;
     // ev@1fce4c5e-0ab8-41bb-90f7-14277703d2ac:v1
 
 protected:
@@ -119,12 +100,7 @@ private:
 
     // ev@211cfdbe-f69a-4cd6-a4ec-f8aaa3d1b6c8:v1
     // insert your private definitions here
-    // track the session started reasons for every EVSE+Connector combination to be able to report correct trigger
-    // reason in TransactionStarted event
-    std::map<std::pair<int32_t, int32_t>, types::evse_manager::StartSessionReason> session_started_reasons;
-    std::map<std::pair<int32_t, int32_t>, std::optional<TransactionStart>> transaction_starts;
-
-    TxStartPoint tx_start_point;
+    std::unique_ptr<TransactionHandler> transaction_handler;
 
     std::filesystem::path ocpp_share_path;
 
@@ -134,12 +110,38 @@ private:
     std::condition_variable evse_ready_cv;
     void init_evse_ready_map();
     bool all_evse_ready();
-    std::map<int32_t, int32_t> get_connector_structure();
 
-    void transaction_start(std::int32_t evseid, std::int32_t connector, const std::string& session_id,
-                           const std::optional<std::string>& transaction_id);
-    void transaction_end(std::int32_t evseid, std::int32_t connector, const std::string& session_id,
-                         const std::optional<std::string>& transaction_id);
+    void set_external_limits(const std::map<int32_t, ocpp::v201::CompositeSchedule>& charging_schedules);
+    void publish_charging_schedules(const std::map<int32_t, ocpp::v201::CompositeSchedule>& charging_schedules);
+
+    std::map<int32_t, int32_t> get_connector_structure();
+    void process_session_event(const int32_t evse_id, const types::evse_manager::SessionEvent& session_event);
+    void process_tx_event_effect(const int32_t evse_id, const TxEventEffect tx_event_effect,
+                                 const types::evse_manager::SessionEvent& session_event);
+    void process_session_started(const int32_t evse_id, const int32_t connector_id,
+                                 const types::evse_manager::SessionEvent& session_event);
+    void process_session_finished(const int32_t evse_id, const int32_t connector_id,
+                                  const types::evse_manager::SessionEvent& session_event);
+    void process_transaction_started(const int32_t evse_id, const int32_t connector_id,
+                                     const types::evse_manager::SessionEvent& session_event);
+    void process_transaction_finished(const int32_t evse_id, const int32_t connector_id,
+                                      const types::evse_manager::SessionEvent& session_event);
+    void process_charging_started(const int32_t evse_id, const int32_t connector_id,
+                                  const types::evse_manager::SessionEvent& session_event);
+    void process_charging_resumed(const int32_t evse_id, const int32_t connector_id,
+                                  const types::evse_manager::SessionEvent& session_event);
+    void process_charging_paused_ev(const int32_t evse_id, const int32_t connector_id,
+                                    const types::evse_manager::SessionEvent& session_event);
+    void process_charging_paused_evse(const int32_t evse_id, const int32_t connector_id,
+                                      const types::evse_manager::SessionEvent& session_event);
+    void process_enabled(const int32_t evse_id, const int32_t connector_id,
+                         const types::evse_manager::SessionEvent& session_event);
+    void process_disabled(const int32_t evse_id, const int32_t connector_id,
+                          const types::evse_manager::SessionEvent& session_event);
+    void process_authorized(const int32_t evse_id, const int32_t connector_id,
+                            const types::evse_manager::SessionEvent& session_event);
+    void process_deauthorized(const int32_t evse_id, const int32_t connector_id,
+                              const types::evse_manager::SessionEvent& session_event);
     // ev@211cfdbe-f69a-4cd6-a4ec-f8aaa3d1b6c8:v1
 };
 
