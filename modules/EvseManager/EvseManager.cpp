@@ -1045,6 +1045,7 @@ bool EvseManager::updateLocalEnergyLimit(types::energy::ExternalLimits l) {
             updateLocalMaxWattLimit(get_powersupply_capabilities().max_export_power_W);
         }
     } else {
+        EVLOG_info << "Setting the following external limits on energy node" << l;
         // apply external limits if they are lower
         local_energy_limits = l;
     }

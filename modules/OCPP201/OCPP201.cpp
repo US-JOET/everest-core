@@ -583,13 +583,18 @@ void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::CompositeS
             types::energy::LimitsReq limits_req;
             const auto timestamp = start_time.to_time_point() + std::chrono::seconds(period.startPeriod);
             schedule_req_entry.timestamp = ocpp::DateTime(timestamp).to_rfc3339();
+            auto limit = period.limit;
             if (schedule.chargingRateUnit == ocpp::v201::ChargingRateUnitEnum::A) {
-                limits_req.ac_max_current_A = period.limit;
                 if (period.numberPhases.has_value()) {
                     limits_req.ac_max_phase_count = period.numberPhases.value();
+                    // Hack to address single phase AC charging
+                    if (period.numberPhases.value() == 1) {
+                        limit *= 3;
+                    }
                 }
+                limits_req.ac_max_current_A = limit;
             } else {
-                limits_req.total_power_W = period.limit;
+                limits_req.total_power_W = limit;
             }
             schedule_req_entry.limits_to_leaves = limits_req;
             schedule_import.push_back(schedule_req_entry);
