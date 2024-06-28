@@ -421,9 +421,11 @@ void OCPP201::ready() {
         };
 
     // Smart Charging support
+    EVLOG_info << "Launching timer for calling set_external_limits function";
     this->charging_schedules_timer = std::make_unique<Everest::SteadyTimer>([this]() {
         const auto charging_schedules =
             this->charge_point->get_all_composite_charging_schedules(this->config.PublishChargingScheduleDurationS);
+        EVLOG_info << "Timer complete, calling set_external_limits function";
         this->set_external_limits(charging_schedules);
         this->publish_charging_schedules(charging_schedules);
     });
@@ -577,6 +579,9 @@ void OCPP201::set_external_limits(const std::map<int32_t, ocpp::v201::CompositeS
     // for each EVSE
     for (auto const& [evse_id, schedule] : charging_schedules) {
         types::energy::ExternalLimits limits;
+        // Sorry for introducing this hack. Unfortunately, cleaning it up will require significantly  
+        // refactoring the mapping datastructure, which will involve coordination with the community,
+        if (evse_id == 0) continue;
         std::vector<types::energy::ScheduleReqEntry> schedule_import;
         for (const auto period : schedule.chargingSchedulePeriod) {
             types::energy::ScheduleReqEntry schedule_req_entry;
